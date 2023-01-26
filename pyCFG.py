@@ -4,15 +4,14 @@ from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
 
 class JumpType(Enum):
-    NO_JUMP = 0
-    ABSOLUTE_JUMP = 1
-    CONDITIONAL_JUMP = 2
+    JMP = 1
+    JCC_TAKEN = 2
+    JCC_NOT_TAKEN = 3
 
 @dataclass(slots=True, frozen=True)
 class Instruction:
     name: str
     operand: str = ""
-    jump: JumpType = JumpType.NO_JUMP
 
     ## This could be removed as most types have formatting implemented.
     def __post_init__(self):
@@ -23,17 +22,35 @@ class Instruction:
                 current_type = type(given_args[name])
                 raise TypeError(f"The field `{name}` was assigned by `{current_type}` instead of `{field_type}`")
 
+@dataclass(slots=True, frozen=True)
+class Jump:
+    name: str
+    success_address: int
+    jump_type: JumpType
+    failure_address: Optional[int] = field(default=None) ## Specify if you are doing a conditional jump
+
+    def __post_init__(self):
+        ##https://stackoverflow.com/questions/58992252/how-to-enforce-dataclass-fields-types
+        given_args = asdict(self)
+        if given_args["jump_type"] in [JumpType.JCC_NOT_TAKEN, JumpType.JCC_TAKEN] and given_args["failure_address"] is None:
+            raise TypeError(f"The JumpType {given_args['jump_type']} requires a failure address, in addition to the success address.")
+        for (name, field_type) in self.__annotations__.items():
+            if not isinstance(given_args[name], field_type):
+                current_type = type(given_args[name])
+                raise TypeError(f"The field `{name}` was assigned by `{current_type}` instead of `{field_type}`")
+
+
 @dataclass(slots=True, unsafe_hash=True)
 class CFGNode:
     start: int
     # https://stackoverflow.com/questions/71195208/creating-a-unique-id-in-a-python-dataclass
     __id: int = field(default_factory=count().__next__, init=False)
-    __block: dict[int, Instruction] = field(default_factory=dict, compare=False, init=False)
+    __block: dict[int, Instruction | Jump] = field(default_factory=dict, compare=False, init=False)
 
-    def add_instruction(self, addr: int, instruction: Instruction):
-        assert(isinstance(instruction, Instruction) == True) ## You have to provide an instruction instance.
-        assert((addr > self.start) == True) ## You can't go backwards, unless you are jumping!
-        self.__block[addr] = astuple(instruction)
+    def add_instruction(self, addr: int, instr_or_jmp: Instruction | Jump):
+        assert(isinstance(instr_or_jmp, Instruction | Jump) == True) ## You have to provide a instruction or jump instance.
+        assert((addr > self.start) == True) ## You can't go backwards, unless you somehow jumped without providing the Jump instruction.
+        self.__block[addr] = astuple(instr_or_jmp)
 
     @property
     def end(self): ## Get the last key of the block and convert to int
@@ -51,15 +68,16 @@ class CFGNode:
     def __str__(self):
         ret_string = ""
         for address in self.__block:
-            retrieved_instruction = self.__block[address]
-            ret_string += f"{hex(address) : <16} {retrieved_instruction[0] :<12} {retrieved_instruction[1]:<12}\n"
+            retrieved: Instruction | Jump = self.__block[address]
+            ret_string += f"{hex(address) : <16} {retrieved[0] :<12} {retrieved[1]:<12}\n"
         return ret_string
 
 
 class DirectedGraph:
     def __init__(self, entry_point:int):
         self._curr_node: CFGNode = CFGNode(entry_point)
-        self._nodes = {}
+        self._previous_node: CFGNode = None
+        self._nodes: dict[CFGNode, list[CFGNode]] = {}
         self.add_node(self._curr_node)
 
     ## edges: list[CFGNode] = DirectedGraph[node]
@@ -71,9 +89,14 @@ class DirectedGraph:
         edges = [] if edges is None else edges
         self._nodes[node] = edges
 
+    """ Iterating in reverse to see if we might have already explored a node is faster, if such node exists. """
     @property
     def nodes(self):
-        return self._nodes.keys()
+        return self._nodes.keys().__reversed__()
+
+    # @property # What about case of empty nodes
+    # def previous_node(self):
+    #     return self.nodes[0]
 
     def add_node(self, node:CFGNode, edges: Optional[ list[CFGNode] ]=None):
         assert(isinstance(node, CFGNode) == True)
@@ -102,20 +125,14 @@ class pyCFG:
 
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
-    def execute(self, program_counter:int , instruction: Instruction):
-        current_node = self.__current_node__
-        ## Branching logic with the use of _curr_node
-        if program_counter not in current_node.addresses or instruction.jump: ## Jumps are always re-evaluated
-            match instruction.jump:
-                case JumpType.NO_JUMP:
-                    current_node.add_instruction(program_counter, instruction)
-                case JumpType.CONDITIONAL_JUMP:
-                    ## Create two blocks for successful and unsuccessful
-                    pass
-                case JumpType.ABSOLUTE_JUMP:
-                    pass
-        pass
-
+    def execute(self, program_counter:int , instr_or_jmp: Instruction | Jump):
+        current_node = self.__CFG._curr_node
+        previous_node = self.__CFG._previous_node
+        match isinstance(instr_or_jmp, Instruction):
+            case True: ## instruction type
+                pass
+            case False: ## jump type
+                pass
     """ View the generated .dot with pySide6 """
     def view(self):
         pass
@@ -123,20 +140,15 @@ class pyCFG:
     def __nodes__(self):
         return self.__CFG.nodes
 
-    @property
-    def __current_node__(self):
-        return self.__CFG._curr_node
-
-
 
 # Creating our own .dot file generation
 
 if __name__ == "__main__":
     test_graph = pyCFG(0)
-    test_graph.execute(1, Instruction("LOAD", "1"))
+    new_node = CFGNode(3)
+    test_graph.execute(1, Instruction("LOAD"))
     test_graph.execute(2, Instruction("PUSH", "1"))
     test_graph.execute(3, Instruction("STORE", "1"))
-    iter = test_graph.__nodes__()
-    for node in iter:
+    for node in test_graph.__nodes__():
         print(node)
     # Handle loop case of a block
