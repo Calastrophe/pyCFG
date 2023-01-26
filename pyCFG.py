@@ -76,7 +76,7 @@ class CFGNode:
 class DirectedGraph:
     def __init__(self, entry_point:int):
         self._curr_node: CFGNode = CFGNode(entry_point)
-        self._previous_node: CFGNode = None
+        # self._previous_node: CFGNode = None
         self._nodes: dict[CFGNode, list[CFGNode]] = {}
         self.add_node(self._curr_node)
 
@@ -127,16 +127,33 @@ class pyCFG:
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
         current_node = self.__CFG._curr_node
-        previous_node = self.__CFG._previous_node
         match isinstance(instr_or_jmp, Instruction):
             case True: ## instruction type
-                current_node.add_instruction(program_counter, instr_or_jmp)
+                if program_counter not in current_node.addresses:
+                    current_node.add_instruction(program_counter, instr_or_jmp)
             case False: ## jump type
                 self.__match_jump(program_counter, instr_or_jmp)
 
     def __match_jump(self, program_counter:int, jump: Jump):
         assert(isinstance(jump, Jump) == True)
-        pass
+        current_node = self.__CFG._curr_node
+        match jump.jump_type:
+            case JumpType.JMP:
+                if program_counter not in current_node.addreses: ## Jumps are always taken, no need to re-evaluate
+                    potential_node = self.__CFG.query_nodes(jump.success_address)
+                    next_node = potential_node if potential_node else CFGNode(jump.success_address)
+                    current_node.add_instruction(program_counter, jump)
+                    self.__CFG.add_node(next_node)
+                    self.__CFG.add_edge(current_node, next_node)
+                    current_node = next_node
+            case _: ## JumpType.JCC_TAKEN JumpType.JCC_NOT_TAKEN
+                target_address = jump.success_address if jump.failure_address is None else jump.failure_address
+                potential_node = self.__CFG.query_nodes(target_address)
+                next_node = potential_node if potential_node else CFGNode(target_address)
+                current_node.add_instruction(program_counter, jump)
+                self.__CFG.add_node(next_node)
+                self.__CFG.add_edge(current_node, next_node)
+                current_node = next_node
 
 
     
