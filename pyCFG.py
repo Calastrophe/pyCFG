@@ -95,7 +95,7 @@ class DirectedGraph:
         
 
 " The control flow graph requires to know the entry point which it will start the nodes from. "
-class pyCFG():
+class pyCFG:
     def __init__(self, entry_point: int):
         self.__CFG = DirectedGraph(entry_point)
 
