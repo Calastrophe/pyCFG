@@ -32,7 +32,7 @@ class Jump:
     def __post_init__(self):
         ##https://stackoverflow.com/questions/58992252/how-to-enforce-dataclass-fields-types
         given_args = asdict(self)
-        if given_args["jump_type"] in [JumpType.JCC_NOT_TAKEN, JumpType.JCC_TAKEN] and given_args["failure_address"] is None:
+        if given_args["jump_type"] > 1 and given_args["failure_address"] is None:
             raise TypeError(f"The JumpType {given_args['jump_type']} requires a failure address, in addition to the success address.")
         for (name, field_type) in self.__annotations__.items():
             if not isinstance(given_args[name], field_type):
@@ -125,14 +125,21 @@ class pyCFG:
 
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
-    def execute(self, program_counter:int , instr_or_jmp: Instruction | Jump):
+    def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
         current_node = self.__CFG._curr_node
         previous_node = self.__CFG._previous_node
         match isinstance(instr_or_jmp, Instruction):
             case True: ## instruction type
-                pass
+                current_node.add_instruction(program_counter, instr_or_jmp)
             case False: ## jump type
-                pass
+                self.__match_jump(program_counter, instr_or_jmp)
+
+    def __match_jump(self, program_counter:int, jump: Jump):
+        assert(isinstance(jump, Jump) == True)
+        pass
+
+
+    
     """ View the generated .dot with pySide6 """
     def view(self):
         pass
