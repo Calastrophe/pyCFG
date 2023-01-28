@@ -2,6 +2,8 @@ from itertools import count
 from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
+import subprocess
+
 
 class JumpType(Enum):
     JMP = 1
@@ -115,7 +117,8 @@ class DirectedGraph:
     def edges_to_string(self, edges: list[CFGNode]):
         ret_string = ""
         for edge in edges:
-            ret_string += f"{edge.start},"
+            ret_string += f"node_{edge.start},"
+        ret_string = ret_string[:-1]
         return ret_string
             
 
@@ -123,15 +126,13 @@ class DirectedGraph:
     def generate_dot(self, fn:str):
         with open(fn, "w") as fd:
             fd.write("digraph pyCFG {\n")
-            for node in self.nodes:
-                fd.write(f"{node.start}\n")
-            for node in self.nodes:
-                edge_string: str = self.edges_to_string(self.nodes[node])
+            for node in self._nodes:
+                fd.write(f"\tnode_{node.start} [shape=box]\n")
+            fd.write("\n")
+            for node in self._nodes:
+                edge_string: str = self.edges_to_string(self._nodes[node])
                 if edge_string:
-                    fd.write(f"{node.start} -> { {edge_string} }")
-                else:
-                    fd.write(f"")
-                
+                    fd.write(f"\tnode_{node.start} -> {{{edge_string}}}\n")
             fd.write("}\n")
             ## Iterate over the nodes and 
         pass
@@ -163,20 +164,41 @@ class pyCFG:
                 self.__CFG.add_node(next_node)
                 self.__CFG.add_edge(current_node, next_node)
                 self.__CFG._curr_node = next_node
-        else:
-            target_address = jump.success_address if jump.failure_address is None else jump.failure_address
+        elif jump.jump_type == JumpType.JCC_TAKEN:
+            target_address = jump.success_address
             potential_node = self.__CFG.query_nodes(target_address)
             next_node = potential_node if potential_node else CFGNode(target_address)
-            self.__CFG._curr_node.add_instruction(program_counter, jump)
-            self.__CFG.add_node(next_node)
-            self.__CFG.add_edge(current_node, next_node)
+            potential_fail_node = self.__CFG.query_nodes(jump.failure_address)
+            fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.failure_address)
+            if not potential_node: ## We have made a new node
+                self.__CFG._curr_node.add_instruction(program_counter, jump)
+                self.__CFG.add_node(next_node)
+                self.__CFG.add_edge(current_node, next_node)
+            if not potential_fail_node:
+                self.__CFG.add_node(fail_node)
+                self.__CFG.add_edge(current_node, fail_node)
+            self.__CFG._curr_node = next_node
+        else:
+            target_address = jump.failure_address
+            potential_node = self.__CFG.query_nodes(target_address)
+            next_node = potential_node if potential_node else CFGNode(target_address)
+            potential_fail_node = self.__CFG.query_nodes(jump.failure_address)
+            fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.failure_address)
+            if not potential_node: ## We have made a new node
+                self.__CFG._curr_node.add_instruction(program_counter, jump)
+                self.__CFG.add_node(next_node)
+                self.__CFG.add_edge(current_node, next_node)
+            if not potential_fail_node:
+                self.__CFG.add_node(fail_node)
+                self.__CFG.add_edge(current_node, fail_node)
             self.__CFG._curr_node = next_node
 
 
     
     """ View the generated .dot with pySide6 """
     def view(self):
-        
+        self.__CFG.generate_dot("tester.dot")
+        subprocess.run('dot -Tpng tester.dot -o testfile.png', shell=True)
         pass
 
     def __nodes__(self):
@@ -193,6 +215,9 @@ if __name__ == "__main__":
     test_graph.execute(3, Instruction("STORE", "1"))
     test_graph.execute(4, Jump("JMP", 5, JumpType.JMP))
     test_graph.execute(5, Instruction("PUSH", "1"))
+    test_graph.execute(6, Jump("JMPZ", 7, JumpType.JCC_TAKEN, 12))
+    test_graph.execute(7, Instruction("PUSH", "1"))
     for node in test_graph.__nodes__():
         print(node)
+    test_graph.view()
     # Handle loop case of a block
