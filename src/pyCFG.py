@@ -136,7 +136,7 @@ class DirectedGraph:
             for node in self._nodes:
                 instruction_block: str = repr(node)
                 if instruction_block:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
+                    fd.write(f'\tnode_{node.start} [shape = box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
                 else:
                     fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
@@ -215,7 +215,7 @@ class pyCFG:
     """ View the generated .dot with pySide6 """
     def png(self, output_name):
         self.__CFG.generate_dot()
-        subprocess.run(f'dot -Tpng output.dot -o {output_name}.png', shell=True)
+        subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
         os.remove("output.dot")
 
     def __nodes__(self):
