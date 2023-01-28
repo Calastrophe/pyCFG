@@ -153,7 +153,6 @@ class DirectedGraph:
                         fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
             fd.write("}\n")
             ## Iterate over the nodes and 
-        pass
         
 
 " The control flow graph requires to know the entry point which it will start the nodes from. "
@@ -218,7 +217,6 @@ class pyCFG:
         self.__CFG.generate_dot()
         subprocess.run(f'dot -Tpng output.dot -o {output_name}.png', shell=True)
         os.remove("output.dot")
-        pass
 
     def __nodes__(self):
         return self.__CFG.nodes
