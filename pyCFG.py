@@ -112,11 +112,27 @@ class DirectedGraph:
                 return node
         return None
 
+    def edges_to_string(self, edges: list[CFGNode]):
+        ret_string = ""
+        for edge in edges:
+            ret_string += f"{edge.start},"
+        return ret_string
+            
+
     ## Underlying actual .dot file generation
     def generate_dot(self, fn:str):
-        with open(fn, "w") as file:
-            file.write("digraph pyCFG {\n")
-
+        with open(fn, "w") as fd:
+            fd.write("digraph pyCFG {\n")
+            for node in self.nodes:
+                fd.write(f"{node.start}\n")
+            for node in self.nodes:
+                edge_string: str = self.edges_to_string(self.nodes[node])
+                if edge_string:
+                    fd.write(f"{node.start} -> { {edge_string} }")
+                else:
+                    fd.write(f"")
+                
+            fd.write("}\n")
             ## Iterate over the nodes and 
         pass
         
