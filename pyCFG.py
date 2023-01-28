@@ -32,7 +32,7 @@ class Jump:
     def __post_init__(self):
         ##https://stackoverflow.com/questions/58992252/how-to-enforce-dataclass-fields-types
         given_args = asdict(self)
-        if given_args["jump_type"] > 1 and given_args["failure_address"] is None:
+        if given_args["jump_type"] in [JumpType.JCC_NOT_TAKEN, JumpType.JCC_TAKEN] and given_args["failure_address"] is None:
             raise TypeError(f"The JumpType {given_args['jump_type']} requires a failure address, in addition to the success address.")
         for (name, field_type) in self.__annotations__.items():
             if not isinstance(given_args[name], field_type):
@@ -49,7 +49,7 @@ class CFGNode:
 
     def add_instruction(self, addr: int, instr_or_jmp: Instruction | Jump):
         assert(isinstance(instr_or_jmp, Instruction | Jump) == True) ## You have to provide a instruction or jump instance.
-        assert((addr > self.start) == True) ## You can't go backwards, unless you somehow jumped without providing the Jump instruction.
+        assert((addr >= self.start) == True) ## You can't go backwards, unless you somehow jumped without providing the Jump instruction.
         self.__block[addr] = astuple(instr_or_jmp)
 
     @property
@@ -107,13 +107,17 @@ class DirectedGraph:
         self._nodes[node].append(edge)
 
     def query_nodes(self, address) -> Optional[CFGNode]:
-        for node in self.nodes():
+        for node in self.nodes:
             if node.start == address:
                 return node
         return None
 
     ## Underlying actual .dot file generation
     def generate_dot(self, fn:str):
+        with open(fn, "w") as file:
+            file.write("digraph pyCFG {\n")
+
+            ## Iterate over the nodes and 
         pass
         
 
@@ -126,11 +130,10 @@ class pyCFG:
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
-        current_node = self.__CFG._curr_node
         match isinstance(instr_or_jmp, Instruction):
             case True: ## instruction type
-                if program_counter not in current_node.addresses:
-                    current_node.add_instruction(program_counter, instr_or_jmp)
+                if program_counter not in self.__CFG._curr_node.addresses:
+                    self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
             case False: ## jump type
                 self.__match_jump(program_counter, instr_or_jmp)
 
@@ -139,26 +142,27 @@ class pyCFG:
         current_node = self.__CFG._curr_node
         match jump.jump_type:
             case JumpType.JMP:
-                if program_counter not in current_node.addreses: ## Jumps are always taken, no need to re-evaluate
+                if program_counter not in current_node.addresses: ## Jumps are always taken, no need to re-evaluate
                     potential_node = self.__CFG.query_nodes(jump.success_address)
                     next_node = potential_node if potential_node else CFGNode(jump.success_address)
-                    current_node.add_instruction(program_counter, jump)
+                    self.__CFG._curr_node.add_instruction(program_counter, jump)
                     self.__CFG.add_node(next_node)
                     self.__CFG.add_edge(current_node, next_node)
-                    current_node = next_node
+                    self.__CFG._curr_node = next_node
             case _: ## JumpType.JCC_TAKEN JumpType.JCC_NOT_TAKEN
                 target_address = jump.success_address if jump.failure_address is None else jump.failure_address
                 potential_node = self.__CFG.query_nodes(target_address)
                 next_node = potential_node if potential_node else CFGNode(target_address)
-                current_node.add_instruction(program_counter, jump)
+                self.__CFG._curr_node.add_instruction(program_counter, jump)
                 self.__CFG.add_node(next_node)
                 self.__CFG.add_edge(current_node, next_node)
-                current_node = next_node
+                self.__CFG._curr_node = next_node
 
 
     
     """ View the generated .dot with pySide6 """
     def view(self):
+        
         pass
 
     def __nodes__(self):
@@ -173,6 +177,8 @@ if __name__ == "__main__":
     test_graph.execute(1, Instruction("LOAD"))
     test_graph.execute(2, Instruction("PUSH", "1"))
     test_graph.execute(3, Instruction("STORE", "1"))
+    test_graph.execute(4, Jump("JMP", 5, JumpType.JMP))
+    test_graph.execute(5, Instruction("PUSH", "1"))
     for node in test_graph.__nodes__():
         print(node)
     # Handle loop case of a block
