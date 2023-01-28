@@ -136,9 +136,9 @@ class DirectedGraph:
             for node in self._nodes:
                 instruction_block: str = repr(node)
                 if instruction_block:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"][penwidth=2]\n')
+                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
                 else:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2]\n')
+                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
                 fail = True
