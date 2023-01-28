@@ -125,7 +125,6 @@ class DirectedGraph:
 
     def edges_to_string(self, edges: list[CFGNode]) -> str:
         for edge in edges:
-            print(edge)
             yield f"node_{edge.start}"
             
 
