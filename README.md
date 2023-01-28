@@ -1,4 +1,4 @@
-# What is pyCFG?
+# What is pythonCFG?
 It is an easy-to-use library to implement control flow graph generation in your emulator.
 
 All that is required is to wrap your instruction set around the two classes Instruction or Jump.
