@@ -3,6 +3,7 @@ from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
 import subprocess
+import os
 
 
 class JumpType(Enum):
@@ -129,15 +130,15 @@ class DirectedGraph:
             
 
     ## Underlying actual .dot file generation
-    def generate_dot(self, fn:str):
-        with open(fn, "w") as fd:
+    def generate_dot(self):
+        with open("output.dot", "w") as fd:
             fd.write("digraph pyCFG {\n")
             for node in self._nodes:
                 instruction_block: str = repr(node)
                 if instruction_block:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"]\n')
+                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"][penwidth=2]\n')
                 else:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"]\n')
+                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2]\n')
             fd.write("\n")
             for node in self._nodes:
                 fail = True
@@ -147,7 +148,7 @@ class DirectedGraph:
                             fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="red"]\n')
                             fail = False
                         else:
-                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}}\n')
+                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="blue"]\n')
                     else:
                         fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
             fd.write("}\n")
@@ -213,9 +214,10 @@ class pyCFG:
 
     
     """ View the generated .dot with pySide6 """
-    def view(self):
-        self.__CFG.generate_dot("tester.dot")
-        subprocess.run('dot -Tpng tester.dot -o testfile.png', shell=True)
+    def png(self, output_name):
+        self.__CFG.generate_dot()
+        subprocess.run(f'dot -Tpng output.dot -o {output_name}.png', shell=True)
+        os.remove("output.dot")
         pass
 
     def __nodes__(self):
@@ -236,5 +238,5 @@ if __name__ == "__main__":
     test_graph.execute(7, Instruction("PUSH", "1"))
     for node in test_graph.__nodes__():
         print(node)
-    test_graph.view()
+    test_graph.png('weeee')
     # Handle loop case of a block
