@@ -66,12 +66,20 @@ class CFGNode:
     def instructions(self):
         return self.__block.items()
 
-    ## Generate a string representation for the GUI.
+    ## The string representation of the node for debugging.
     def __str__(self):
         ret_string = ""
         for address in self.__block:
             retrieved: Instruction | Jump = self.__block[address]
             ret_string += f"{hex(address) : <16} {retrieved[0] :<12} {retrieved[1]:<12}\n"
+        return ret_string
+
+    ## The  
+    def __repr__(self):
+        ret_string = ""
+        for address in self.__block:
+            retrieved: Instruction | Jump = self.__block[address]
+            ret_string += f"{hex(address)}   {retrieved[0]}   {retrieved[1]}\\n"
         return ret_string
 
 
@@ -127,7 +135,11 @@ class DirectedGraph:
         with open(fn, "w") as fd:
             fd.write("digraph pyCFG {\n")
             for node in self._nodes:
-                fd.write(f"\tnode_{node.start} [shape=box]\n")
+                instruction_block: str = repr(node)
+                if instruction_block:
+                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"]\n')
+                else:
+                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"]\n')
             fd.write("\n")
             for node in self._nodes:
                 edge_string: str = self.edges_to_string(self._nodes[node])
