@@ -130,33 +130,31 @@ class pyCFG:
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
-        match isinstance(instr_or_jmp, Instruction):
-            case True: ## instruction type
-                if program_counter not in self.__CFG._curr_node.addresses:
-                    self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
-            case False: ## jump type
-                self.__match_jump(program_counter, instr_or_jmp)
+        if isinstance(instr_or_jmp, Instruction):
+            if program_counter not in self.__CFG._curr_node.addresses:
+                self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
+        else:
+            self.__match_jump(program_counter, instr_or_jmp)
 
     def __match_jump(self, program_counter:int, jump: Jump):
         assert(isinstance(jump, Jump) == True)
         current_node = self.__CFG._curr_node
-        match jump.jump_type:
-            case JumpType.JMP:
-                if program_counter not in current_node.addresses: ## Jumps are always taken, no need to re-evaluate
-                    potential_node = self.__CFG.query_nodes(jump.success_address)
-                    next_node = potential_node if potential_node else CFGNode(jump.success_address)
-                    self.__CFG._curr_node.add_instruction(program_counter, jump)
-                    self.__CFG.add_node(next_node)
-                    self.__CFG.add_edge(current_node, next_node)
-                    self.__CFG._curr_node = next_node
-            case _: ## JumpType.JCC_TAKEN JumpType.JCC_NOT_TAKEN
-                target_address = jump.success_address if jump.failure_address is None else jump.failure_address
-                potential_node = self.__CFG.query_nodes(target_address)
-                next_node = potential_node if potential_node else CFGNode(target_address)
+        if jump.jump_type == JumpType.JMP:
+            if program_counter not in current_node.addresses: ## Jumps are always taken, no need to re-evaluate
+                potential_node = self.__CFG.query_nodes(jump.success_address)
+                next_node = potential_node if potential_node else CFGNode(jump.success_address)
                 self.__CFG._curr_node.add_instruction(program_counter, jump)
                 self.__CFG.add_node(next_node)
                 self.__CFG.add_edge(current_node, next_node)
                 self.__CFG._curr_node = next_node
+        else:
+            target_address = jump.success_address if jump.failure_address is None else jump.failure_address
+            potential_node = self.__CFG.query_nodes(target_address)
+            next_node = potential_node if potential_node else CFGNode(target_address)
+            self.__CFG._curr_node.add_instruction(program_counter, jump)
+            self.__CFG.add_node(next_node)
+            self.__CFG.add_edge(current_node, next_node)
+            self.__CFG._curr_node = next_node
 
 
     
