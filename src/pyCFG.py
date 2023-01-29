@@ -2,6 +2,7 @@ from itertools import count
 from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
+import winsound
 import subprocess
 import os
 
@@ -129,8 +130,6 @@ class DirectedGraph:
         for edge in edges:
             yield f"node_{edge.start}"
             
-
-    ## Underlying actual .dot file generation
     def generate_dot(self):
         with open("output.dot", "w") as fd:
             fd.write("digraph pyCFG {\n")
@@ -153,7 +152,6 @@ class DirectedGraph:
                     else:
                         fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
             fd.write("}\n")
-            ## Iterate over the nodes and 
         
 
 " The control flow graph requires to know the entry point which it will start the nodes from. "
@@ -164,6 +162,7 @@ class pyCFG:
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
+        winsound.Beep(((program_counter*8) % 5000)+500, 250)
         if isinstance(instr_or_jmp, Instruction):
             if program_counter not in self.__CFG._curr_node.addresses:
                 self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
