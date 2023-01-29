@@ -3,6 +3,7 @@ from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
 import winsound
+from time import sleep
 import subprocess
 import os
 
@@ -163,6 +164,7 @@ class pyCFG:
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
         winsound.Beep(((program_counter*8) % 5000)+500, 250)
+        sleep(.50)
         if isinstance(instr_or_jmp, Instruction):
             if program_counter not in self.__CFG._curr_node.addresses:
                 self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
