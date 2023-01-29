@@ -234,6 +234,11 @@ class pyCFG:
         subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
         os.remove('output.dot')
 
+    def pdf(self, output_name):
+        self.__CFG.generate_dot()
+        subprocess.run(f'dot -Tpdf -Gdpi=300 output.dot -o {output_name}.pdf', shell=True)
+        os.remove('output.dot')
+
     def __nodes__(self):
         return self.__CFG.nodes
 
@@ -252,5 +257,6 @@ if __name__ == "__main__":
     test_graph.execute(7, Instruction("PUSH", "1"))
     for node in test_graph.__nodes__():
         print(node)
-    test_graph.png('weeee')
+    test_graph.png('teest')
+    test_graph.pdf("test")
     # Handle loop case of a block
