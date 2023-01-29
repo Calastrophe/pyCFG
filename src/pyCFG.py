@@ -97,7 +97,7 @@ class DirectedGraph:
     def __init__(self, entry_point:int):
         self._curr_node: CFGNode = CFGNode(entry_point)
         # self._previous_node: CFGNode = None
-        self._nodes: dict[CFGNode, list[CFGNode(CFGNode, int)]] = {}
+        self._nodes: dict[CFGNode, list[list[CFGNode, int]]] = {}
         self.add_node(self._curr_node)
 
     ## edges: list[CFGNode] = DirectedGraph[node]
@@ -105,7 +105,7 @@ class DirectedGraph:
         return self._nodes[key]
 
     ## DirectedGraph[node] = edges
-    def __setitem__(self, node: CFGNode, edges: Optional[ list[tuple[CFGNode, int]] ]=None):
+    def __setitem__(self, node: CFGNode, edges: Optional[ list[list[CFGNode, int]] ]=None):
         edges = [] if edges is None else edges
         self._nodes[node] = edges
 
@@ -114,22 +114,22 @@ class DirectedGraph:
     def nodes(self):
         return self._nodes.keys().__reversed__()
 
-    def add_node(self, node:CFGNode, edges: Optional[ list[tuple[CFGNode, int]] ]=None):
+    def add_node(self, node:CFGNode, edges: Optional[ list[list[CFGNode, int]] ]=None):
         assert(isinstance(node, CFGNode) == True)
         edges = [] if edges is None else edges
         self._nodes.setdefault(node, edges)
 
     def add_edge(self, node:CFGNode, edge:CFGNode):
-        cfgnode_tuple: tuple(CFGNode, int) = self.query_edges(node, edge)
-        if not cfgnode_tuple:
+        pair: list[CFGNode, int] = self.query_edges(node, edge)
+        if not pair:
             self._nodes[node].append((edge, 1))
         else:
-            self._nodes[node] = (cfgnode_tuple[0], cfgnode_tuple[1]+1)
+            pair[1] += 1
 
-    def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[tuple[CFGNode, int]]:
-        for edge_tuple in self._nodes[node]:
-            if edge_tuple[0] == target_edge:
-                return edge_tuple
+    def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[list[CFGNode, int]]:
+        for pair in self._nodes[node]:
+            if pair[0] == target_edge:
+                return pair
         return None
 
     def query_nodes(self, address) -> Optional[CFGNode]:
