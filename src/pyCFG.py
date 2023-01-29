@@ -122,7 +122,7 @@ class DirectedGraph:
     def add_edge(self, node:CFGNode, edge:CFGNode):
         pair: list[CFGNode, int] = self.query_edges(node, edge)
         if not pair:
-            self._nodes[node].append((edge, 1))
+            self._nodes[node].append( [edge, 1] )
         else:
             pair[1] += 1
 
@@ -138,9 +138,9 @@ class DirectedGraph:
                 return node
         return None
 
-    def edges_to_string(self, edges: list[ tuple[CFGNode, int]] ) -> tuple[str, str]:
-        for (edge, amount_of_visits) in edges:
-            yield (f'node_{edge.start}', f'[label="{amount_of_visits}"]')
+    def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[str, str]:
+        for pair in edges:
+            yield (f'node_{pair[0].start}', f'[label="{pair[1]}"]')
 
             
     def generate_dot(self):
