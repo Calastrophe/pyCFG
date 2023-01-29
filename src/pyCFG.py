@@ -2,9 +2,6 @@ from itertools import count
 from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
-from tone_generator import pluck
-import pygame
-from pygame.mixer import pre_init
 import subprocess
 import os
 
@@ -129,7 +126,7 @@ class DirectedGraph:
 
     def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[list[CFGNode, int]]:
         for pair in self._nodes[node]:
-            if pair[0] == target_edge:
+            if pair[0].start == target_edge.start:
                 return pair
         return None
 
@@ -208,7 +205,7 @@ class pyCFG:
                 fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.failure_address)
                 if not potential_fail_node:
                     self.__CFG.add_node(fail_node)
-                self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
+                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
                 if not potential_node: ## We have made a new node
                     self.__CFG._curr_node.add_instruction(program_counter, jump)
                     self.__CFG.add_node(next_node)
@@ -226,7 +223,7 @@ class pyCFG:
                 self.__CFG.add_edge(self.__CFG._curr_node, next_node)
                 if not potential_fail_node:
                     self.__CFG.add_node(fail_node)
-                self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
+                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
                 self.__CFG._curr_node = next_node
 
 
