@@ -98,6 +98,7 @@ class DirectedGraph:
         self._curr_node: CFGNode = CFGNode(entry_point)
         # self._previous_node: CFGNode = None
         self._nodes: dict[CFGNode, list[list[CFGNode, int]]] = {}
+        self._dont_add: list[int] = []
         self.add_node(self._curr_node)
 
     ## edges: list[CFGNode] = DirectedGraph[node]
@@ -140,7 +141,10 @@ class DirectedGraph:
 
     def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[str, str]:
         for pair in edges:
-            yield (f'node_{pair[0].start}', f'[label="{pair[1]}"]')
+            if pair[0].start in self._dont_add:
+                yield (f'node_{pair[0].start}', f'[label="{0}"]')
+            else:
+                yield (f'node_{pair[0].start}', f'[label="{pair[1]}"]')
 
             
     def generate_dot(self):
@@ -151,6 +155,7 @@ class DirectedGraph:
                 if instruction_block:
                     fd.write(f'\tnode_{node.start} [shape = box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
                 else:
+                    self._dont_add.append(node.start)
                     fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
