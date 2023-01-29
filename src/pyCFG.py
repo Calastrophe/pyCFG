@@ -124,7 +124,7 @@ class DirectedGraph:
         if not cfgnode_tuple:
             self._nodes[node].append((edge, 1))
         else:
-            cfgnode_tuple = (cfgnode_tuple[0], cfgnode_tuple[1]+1)
+            self._nodes[node] = (cfgnode_tuple[0], cfgnode_tuple[1]+1)
 
     def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[tuple[CFGNode, int]]:
         for edge_tuple in self._nodes[node]:
@@ -193,8 +193,7 @@ class pyCFG:
                 self.__CFG._curr_node.add_instruction(program_counter, jump)
                 if not potential_node:
                     self.__CFG.add_node(next_node)
-                if next_node not in self.__CFG._nodes[self.__CFG._curr_node]:
-                    self.__CFG.add_edge(self.__CFG._curr_node, next_node)
+                self.__CFG.add_edge(self.__CFG._curr_node, next_node)
                 self.__CFG._curr_node = next_node
             case JumpType.JCC_TAKEN:
                 target_address = jump.success_address
@@ -204,11 +203,11 @@ class pyCFG:
                 fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.failure_address)
                 if not potential_fail_node:
                     self.__CFG.add_node(fail_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
+                self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
                 if not potential_node: ## We have made a new node
                     self.__CFG._curr_node.add_instruction(program_counter, jump)
                     self.__CFG.add_node(next_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, next_node)
+                self.__CFG.add_edge(self.__CFG._curr_node, next_node)
                 self.__CFG._curr_node = next_node
             case JumpType.JCC_NOT_TAKEN:
                 target_address = jump.failure_address
@@ -219,10 +218,10 @@ class pyCFG:
                 if not potential_node: ## We have made a new node
                     self.__CFG._curr_node.add_instruction(program_counter, jump)
                     self.__CFG.add_node(next_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, next_node)
+                self.__CFG.add_edge(self.__CFG._curr_node, next_node)
                 if not potential_fail_node:
                     self.__CFG.add_node(fail_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
+                self.__CFG.add_edge(self.__CFG._curr_node, fail_node)
                 self.__CFG._curr_node = next_node
 
 
