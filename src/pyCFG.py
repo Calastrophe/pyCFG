@@ -127,9 +127,9 @@ class DirectedGraph:
             cfgnode_tuple = (cfgnode_tuple[0], cfgnode_tuple[1]+1)
 
     def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[tuple[CFGNode, int]]:
-        for (edge, amount_of_visits) in self._nodes[node]:
-            if edge == target_edge:
-                return self._nodes[node]
+        for edge_tuple in self._nodes[node]:
+            if edge_tuple[0] == target_edge:
+                return edge_tuple
         return None
 
     def query_nodes(self, address) -> Optional[CFGNode]:
