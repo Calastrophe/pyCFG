@@ -232,12 +232,10 @@ class pyCFG:
     def png(self, output_name):
         self.__CFG.generate_dot()
         subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
-        os.remove('output.dot')
 
     def pdf(self, output_name):
         self.__CFG.generate_dot()
         subprocess.run(f'dot -Tpdf -Gdpi=300 output.dot -o {output_name}.pdf', shell=True)
-        os.remove('output.dot')
 
     def __nodes__(self):
         return self.__CFG.nodes
