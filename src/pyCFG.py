@@ -97,7 +97,7 @@ class DirectedGraph:
     def __init__(self, entry_point:int):
         self._curr_node: CFGNode = CFGNode(entry_point)
         # self._previous_node: CFGNode = None
-        self._nodes: dict[CFGNode, list[CFGNode]] = {}
+        self._nodes: dict[CFGNode, list[CFGNode(CFGNode, int)]] = {}
         self.add_node(self._curr_node)
 
     ## edges: list[CFGNode] = DirectedGraph[node]
@@ -105,7 +105,7 @@ class DirectedGraph:
         return self._nodes[key]
 
     ## DirectedGraph[node] = edges
-    def __setitem__(self, node: CFGNode, edges: Optional[ list[CFGNode] ]=None):
+    def __setitem__(self, node: CFGNode, edges: Optional[ list[tuple[CFGNode, int]] ]=None):
         edges = [] if edges is None else edges
         self._nodes[node] = edges
 
@@ -114,13 +114,23 @@ class DirectedGraph:
     def nodes(self):
         return self._nodes.keys().__reversed__()
 
-    def add_node(self, node:CFGNode, edges: Optional[ list[CFGNode] ]=None):
+    def add_node(self, node:CFGNode, edges: Optional[ list[tuple[CFGNode, int]] ]=None):
         assert(isinstance(node, CFGNode) == True)
         edges = [] if edges is None else edges
         self._nodes.setdefault(node, edges)
 
     def add_edge(self, node:CFGNode, edge:CFGNode):
-        self._nodes[node].append(edge)
+        cfgnode_tuple: tuple(CFGNode, int) = self.query_edges(node, edge)
+        if not cfgnode_tuple:
+            self._nodes[node].append((edge, 1))
+        else:
+            cfgnode_tuple = (cfgnode_tuple[0], cfgnode_tuple[1]+1)
+
+    def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[tuple[CFGNode, int]]:
+        for (edge, amount_of_visits) in self._nodes[node]:
+            if edge == target_edge:
+                return self._nodes[node]
+        return None
 
     def query_nodes(self, address) -> Optional[CFGNode]:
         for node in self.nodes:
@@ -128,9 +138,10 @@ class DirectedGraph:
                 return node
         return None
 
-    def edges_to_string(self, edges: list[CFGNode]) -> str:
-        for edge in edges:
-            yield f"node_{edge.start}"
+    def edges_to_string(self, edges: list[ tuple[CFGNode, int]] ) -> tuple[str, str]:
+        for (edge, amount_of_visits) in edges:
+            yield (f'node_{edge.start}', f'[label="{amount_of_visits}"]')
+
             
     def generate_dot(self):
         with open("output.dot", "w") as fd:
@@ -144,15 +155,15 @@ class DirectedGraph:
             fd.write("\n")
             for node in self._nodes:
                 fail = True
-                for edge_string in self.edges_to_string(self._nodes[node]):
+                for (edge_string, visits_label) in self.edges_to_string(self._nodes[node]):
                     if fail:
                         if len(self._nodes[node]) == 2:
-                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="red"]\n')
+                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="red"]\n')
                             fail = False
                         else:
-                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="blue"]\n')
+                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="blue"]\n')
                     else:
-                        fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
+                        fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="green"]\n')
             fd.write("}\n")
 
 
