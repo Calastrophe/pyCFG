@@ -142,7 +142,7 @@ class DirectedGraph:
     def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[str, str]:
         for pair in edges:
             if pair[0].start in self._dont_add:
-                yield (f'node_{pair[0].start}', f'[label="{0}"]')
+                yield (f'node_{pair[0].start}', f'[label="0"]')
             else:
                 yield (f'node_{pair[0].start}', f'[label="{pair[1]}"]')
 
