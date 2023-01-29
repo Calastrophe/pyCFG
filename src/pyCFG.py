@@ -4,9 +4,7 @@ from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
 from tone_generator import pluck
 import pygame
-import time
 from pygame.mixer import pre_init
-from selenium import webdriver
 import subprocess
 import os
 
@@ -101,7 +99,6 @@ class DirectedGraph:
         # self._previous_node: CFGNode = None
         self._nodes: dict[CFGNode, list[CFGNode]] = {}
         self.add_node(self._curr_node)
-        self.webdriver = webdriver.Firefox() ## JUST FOR VISUALIZATION REMOVE ME LATER!!!
 
     ## edges: list[CFGNode] = DirectedGraph[node]
     def __getitem__(self, key) -> CFGNode:
@@ -141,13 +138,11 @@ class DirectedGraph:
             for node in self._nodes:
                 instruction_block: str = repr(node)
                 if instruction_block:
-                    fd.write(f'\tnode_{node.start} [shape=box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
+                    fd.write(f'\tnode_{node.start} [shape = box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
                 else:
                     fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
-
-        for node in self._nodes:
-            with open("output.dot", "a") as fd:
+            for node in self._nodes:
                 fail = True
                 for edge_string in self.edges_to_string(self._nodes[node]):
                     if fail:
@@ -158,18 +153,7 @@ class DirectedGraph:
                             fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="blue"]\n')
                     else:
                         fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
-            temp_string = ""
-            with open("output.dot", "r") as fd:
-                temp_string = fd.read() + "}"
-            with open("temp.dot", "w") as temp:
-                temp.write(temp_string)
-            subprocess.run(f'dot -Tpng -Gdpi=300 temp.dot -o control_flow.png', shell=True)
-            self.webdriver.get(f"{os.getcwd()}\control_flow.png")
-            time.sleep(3)
-
-
-
-            # fd.write("}\n")
+            fd.write("}\n")
 
 
 " The control flow graph requires to know the entry point which it will start the nodes from. "
@@ -235,9 +219,8 @@ class pyCFG:
     """ View the generated .dot with pySide6 """
     def png(self, output_name):
         self.__CFG.generate_dot()
-        os.remove("temp.dot")
+        subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
         os.remove('output.dot')
-        # subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
 
     def __nodes__(self):
         return self.__CFG.nodes
@@ -251,17 +234,11 @@ if __name__ == "__main__":
     test_graph.execute(1, Instruction("LOAD"))
     test_graph.execute(2, Instruction("PUSH", "1"))
     test_graph.execute(3, Instruction("STORE", "1"))
-    test_graph.execute(4, Instruction("LOAD"))
+    test_graph.execute(4, Jump("JMP", 5, JumpType.JMP))
     test_graph.execute(5, Instruction("PUSH", "1"))
-    test_graph.execute(6, Instruction("STORE", "1"))
-    test_graph.execute(7, Instruction("LOAD"))
-    test_graph.execute(8, Instruction("PUSH", "1"))
-    test_graph.execute(9, Instruction("STORE", "1"))
-    test_graph.execute(10, Jump("JMP", 12, JumpType.JMP))
-    test_graph.execute(12, Instruction("PUSH", "1"))
-    test_graph.execute(13, Jump("JMPZ", 16, JumpType.JCC_TAKEN, 12))
-    test_graph.execute(16, Instruction("PUSH", "1"))
+    test_graph.execute(6, Jump("JMPZ", 7, JumpType.JCC_TAKEN, 12))
+    test_graph.execute(7, Instruction("PUSH", "1"))
     for node in test_graph.__nodes__():
         print(node)
-    test_graph.png(123)
+    test_graph.png('weeee')
     # Handle loop case of a block
