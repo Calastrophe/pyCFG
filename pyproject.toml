@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pythonCFG"
-version = "1.0.5"
+version = "1.0.6"
 authors = [
   { name="Calastrophe", email="vmxoperation@proton.me" },
 ]
@@ -19,5 +19,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Calastrophe/pythonRSC"
-"Bug Tracker" = "https://github.com/Calastrophe/pythonRSC/issues"
+"Homepage" = "https://github.com/Calastrophe/pythonCFG"
+"Bug Tracker" = "https://github.com/Calastrophe/pythonCFG/issues"

@@ -2,8 +2,9 @@ from itertools import count
 from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field, astuple, asdict
-import winsound
-from time import sleep
+from tone_generator import pluck
+import pygame
+from pygame.mixer import pre_init
 import subprocess
 import os
 
@@ -153,18 +154,19 @@ class DirectedGraph:
                     else:
                         fd.write(f'\tnode_{node.start} -> {{{edge_string}}} [color="green"]\n')
             fd.write("}\n")
-        
+
 
 " The control flow graph requires to know the entry point which it will start the nodes from. "
 class pyCFG:
     def __init__(self, entry_point: int):
         self.__CFG = DirectedGraph(entry_point)
+        pre_init(44100, -16, 1, 1024)
+        pygame.init()
 
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
-        winsound.Beep(((program_counter*8) % 5000)+500, 250)
-        sleep(.50)
+        pluck(((program_counter*8) % 5000)+500)
         if isinstance(instr_or_jmp, Instruction):
             if program_counter not in self.__CFG._curr_node.addresses:
                 self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
