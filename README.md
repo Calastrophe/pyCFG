@@ -53,3 +53,20 @@ Some pseudocode after you've matched your instruction set with its respective op
         def output(self):
               self.graph.png("some_output.png") # Returns an image of the control flow graph.
 ```
+
+# Implementations?
+
+There is an example implementation in the source code of pythonRSCdev.
+
+https://github.com/Calastrophe/pythonRSC-dev/blob/master/src/pythonRSCdev/emulator.py#L41
+
+Then the matched instruction is executed inside the start() function above it.
+
+
+# What does it look like?
+
+A large execution graph will typically look something like this ( instructions in the block depend on your architecture ).
+
+There a few things subject to change on how the control flow graph will look in coming versions in order to better analyze the graph.
+
+![image](https://user-images.githubusercontent.com/74928681/215513107-28c75e94-7209-4958-a671-c1cc742acc5c.png)
