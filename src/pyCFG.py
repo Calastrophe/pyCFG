@@ -146,7 +146,8 @@ class DirectedGraph:
             for node in self._nodes:
                 instruction_block: str = repr(node)
                 box_label = instruction_block if instruction_block else "Unexplored"
-                fd.write(f'\tnode_{node.start} [shape = box][label="{box_label}"][penwidth=2][fontname = "Comic Sans MS"]\n')
+                box_color = '[color="webmaroon"]' if box_label == "Unexplored" else '[color="gray0"]'
+                fd.write(f'\tnode_{node.start} [shape =box][label="{box_label}"]{box_color}[penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
                 node_edges = self._nodes[node]
