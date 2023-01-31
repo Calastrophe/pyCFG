@@ -78,7 +78,6 @@ class CFGNode:
             ret_string += f"{hex(address) : <16} {retrieved[0] :<12} {retrieved[1]:<12}\n"
         return ret_string
 
-    ## The  
     def __repr__(self):
         ret_string = ""
         for address in self.__block:
@@ -93,7 +92,6 @@ class CFGNode:
 class DirectedGraph:
     def __init__(self, entry_point:int):
         self._curr_node: CFGNode = CFGNode(entry_point)
-        # self._previous_node: CFGNode = None
         self._nodes: dict[CFGNode, list[list[CFGNode, int]]] = {}
         self.add_node(self._curr_node)
 
@@ -147,7 +145,7 @@ class DirectedGraph:
                 instruction_block: str = repr(node)
                 box_label = instruction_block if instruction_block else "Unexplored"
                 box_color = '[color="webmaroon"]' if box_label == "Unexplored" else '[color="gray0"]'
-                fd.write(f'\tnode_{node.start} [shape =box][label="{box_label}"]{box_color}[penwidth=2][fontname = "Comic Sans MS"]\n')
+                fd.write(f'\tnode_{node.start} [shape=box][label="{box_label}"]{box_color}[penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
                 node_edges = self._nodes[node]
