@@ -95,7 +95,6 @@ class DirectedGraph:
         self._curr_node: CFGNode = CFGNode(entry_point)
         # self._previous_node: CFGNode = None
         self._nodes: dict[CFGNode, list[list[CFGNode, int]]] = {}
-        self._dont_add: list[int] = []
         self.add_node(self._curr_node)
 
     ## edges: list[CFGNode] = DirectedGraph[node]
@@ -136,12 +135,9 @@ class DirectedGraph:
                 return node
         return None
 
-    def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[str, str]:
-        for pair in edges:
-            if pair[0].start in self._dont_add:
-                yield (f'node_{pair[0].start}', f'[label="0"]')
-            else:
-                yield (f'node_{pair[0].start}', f'[label="{pair[1]}"]')
+    def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[int, str, str]:
+        for i, pair in enumerate(edges):
+            yield (i, f'node_{pair[0].start}', f'[label="{pair[1]}"]')
 
             
     def generate_dot(self):
@@ -149,23 +145,14 @@ class DirectedGraph:
             fd.write("digraph pyCFG {\n")
             for node in self._nodes:
                 instruction_block: str = repr(node)
-                if instruction_block:
-                    fd.write(f'\tnode_{node.start} [shape = box][label="{instruction_block}"][penwidth=2][fontname = "Comic Sans MS"]\n')
-                else:
-                    self._dont_add.append(node.start)
-                    fd.write(f'\tnode_{node.start} [shape=box][label="Unexplored"][color="webmaroon"][penwidth=2][fontname = "Comic Sans MS"]\n')
+                box_label = instruction_block if instruction_block else "Unexplored"
+                fd.write(f'\tnode_{node.start} [shape = box][label="{box_label}"][penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
-                fail = True
-                for (edge_string, visits_label) in self.edges_to_string(self._nodes[node]):
-                    if fail:
-                        if len(self._nodes[node]) == 2:
-                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="red"]\n')
-                            fail = False
-                        else:
-                            fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="blue"]\n')
-                    else:
-                        fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="green"]\n')
+                node_edges = self._nodes[node]
+                for (edge_num, edge_string, visits_label) in self.edges_to_string(node_edges):
+                    edge_color = "blue" if len(node_edges) == 1 else "red" if len(node_edges) == 2 and edge_num == 0 else "green"
+                    fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="{edge_color}"]\n')
             fd.write("}\n")
 
 
@@ -173,13 +160,10 @@ class DirectedGraph:
 class pyCFG:
     def __init__(self, entry_point: int):
         self.__CFG = DirectedGraph(entry_point)
-        # pre_init(44100, -16, 1, 1024) Add back if visual representation is supplied in time
-        # pygame.init()
 
     """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
     """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
     def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
-        # pluck(((program_counter*8) % 5000)+500)
         if isinstance(instr_or_jmp, Instruction):
             if program_counter not in self.__CFG._curr_node.addresses:
                 self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
