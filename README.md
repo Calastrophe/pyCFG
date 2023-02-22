@@ -57,11 +57,11 @@ Some pseudocode after you've matched your instruction set with its respective op
 
 # Implementations?
 
-There is an example implementation in the source code of pythonRSCdev.
+There is an example implementation in the source code of pythonRSC.
 
-https://github.com/Calastrophe/pythonRSC-dev/blob/master/src/pythonRSCdev/emulator.py#L41
+[https://github.com/Calastrophe/pythonRSC-dev/blob/master/src/pythonRSCdev/emulator.py#L41](https://github.com/Calastrophe/pythonRSC/blob/5fded34c159ac6f31cf332b0fcd9f55314d3434d/src/pythonRSC/emulator.py#L175-L188)
 
-Then the matched instruction is executed inside the start() function above it.
+Then the matched instruction is executed inside the cycle() function above it.
 
 
 # What does it look like?
