@@ -101,6 +101,7 @@ class ControlFlowGraph:
         self._nodes: list[BasicBlock] = [BasicBlock(entry_point)]
         self._curr_node: BasicBlock = self._nodes[0]
     
+    """ Execute a given instruction on the ControlFlowGraph """
     def execute(self, program_counter:int, instruction: Instruction | Jump):
         assert(program_counter >= self._curr_node.start)
         if program_counter not in self._curr_node.addresses:
@@ -124,10 +125,12 @@ class ControlFlowGraph:
                     self._curr_node.add_edge(success_index, False)
                     self._curr_node = fail_block
 
+    """ Wrapper for adding nodes to the graph """
     def __add_node(self, node:BasicBlock):
         assert(isinstance(node, BasicBlock))
         self._nodes.append(node)
 
+    """ Queries to see if a block exists, if so, return the block and its index - or create one. """
     def __query_block_or_create(self, start_addr:int) -> tuple[int, BasicBlock]:
         for i, node in enumerate(self.nodes):
             if node.start == start_addr:
@@ -136,17 +139,19 @@ class ControlFlowGraph:
         self.__add_node(BasicBlock(start_addr))
         return (index, self._nodes[index])
 
+    """ Produces a picture of the current ControlFlowGraph """
     def png(self, output_name: str):
         self.dot()
         subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
         os.remove('output.dot')
 
-
+    """ Produces a PDF version of the current ControlFlowGraph """
     def pdf(self, output_name: str):
         self.dot()
         subprocess.run(f'dot -Tpdf -Gdpi=300 output.dot -o {output_name}.pdf', shell=True)
         os.remove('output.dot')
 
+    """ Produces a dot file with the name output.dot """
     def dot(self):
         with open("output.dot", "w") as fd:
             fd.write("digraph pyCFG {\n")
@@ -166,16 +171,3 @@ class ControlFlowGraph:
     @property
     def nodes(self):
         return reversed(self._nodes)
-
-
-if __name__ == "__main__":
-    test_graph = ControlFlowGraph(0)
-    test_graph.execute(1, Instruction("LOAD"))
-    test_graph.execute(2, Instruction("PUSH", "1"))
-    test_graph.execute(3, Instruction("STORE", "1"))
-    test_graph.execute(4, Jump("JMP", 5, JumpType.JMP))
-    test_graph.execute(5, Instruction("PUSH", "1"))
-    test_graph.execute(6, Jump("JMPZ", 7, JumpType.JCC_TAKEN, 12))
-    test_graph.execute(7, Instruction("PUSH", "1"))
-    test_graph.png("tester")
-    test_graph.pdf("test")
