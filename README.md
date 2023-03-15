@@ -28,14 +28,15 @@ Some psuedocode to simulate this is...
 ```py
 match instruction:
       case INC:
-            Instruction("INC")
+            return Instruction("INC")
             
       case JUMP:
-            Jump("JUMP", 0x30, JumpType.JMP) ## NOTE: A failure address is not needed as this is an absolute jump!
+            return Jump("JUMP", 0x30, JumpType.JMP) ## NOTE: A failure address is not needed as this is an absolute jump!
             ## NOTE: You will need to dynamically determine what your success_address and failure_address.
             
       case CONDITIONAL_JUMP:
-            Jump("COND", 0x30, JumpType.JCC_TAKEN, 0x20) ## NOTE: A failure address is needed as this is conditional.
+            return Jump("COND", 0x30, """ JumpType.JCC_TAKEN or JumpType.JCC_NOT_TAKEN """, 0x20) ## NOTE: A failure address is needed as this is conditional.
+            ## It is burden upon you to determine if the jump is taken or not as it is not feasible for this library and its goals.
 ```
 
 After matching your instruction set into an Instruction or Jump, you will need to execute this instruction in the graph.
@@ -56,11 +57,11 @@ Some pseudocode after you've matched your instruction set with its respective op
 
 # Implementations?
 
-There is an example implementation in the source code of pythonRSCdev.
+There is an example implementation in the source code of pythonRSC.
 
-https://github.com/Calastrophe/pythonRSC-dev/blob/master/src/pythonRSCdev/emulator.py#L41
+[https://github.com/Calastrophe/pythonRSC-dev/blob/master/src/pythonRSCdev/emulator.py#L41](https://github.com/Calastrophe/pythonRSC/blob/5fded34c159ac6f31cf332b0fcd9f55314d3434d/src/pythonRSC/emulator.py#L175-L188)
 
-Then the matched instruction is executed inside the start() function above it.
+Then the matched instruction is executed inside the cycle() function above it.
 
 
 # What does it look like?
