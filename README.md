@@ -44,7 +44,7 @@ Some pseudocode after you've matched your instruction set with its respective op
     class Emulator:
         def __init__(self):
               ## OTHER ARGUMENTS ARE IMPLEMENTATION SPECIFIC
-              self.graph = pyCFG(0) ## Import this class and set your entry point address ( in this case 0 ).
+              self.graph = ControlFlowGraph(0) ## Import this class and set your entry point address ( in this case 0 ).
               
         def execute(self, instruction):
               self.graph.execute( matched_instruction(instruction) ) 

@@ -44,33 +44,40 @@ class Jump:
 
 
 @dataclass(slots=True, unsafe_hash=True)
-class CFGNode:
+class BasicBlock:
     start: int
     # https://stackoverflow.com/questions/71195208/creating-a-unique-id-in-a-python-dataclass
     __id: int = field(default_factory=count().__next__, init=False)
     __block: dict[int, Instruction | Jump] = field(default_factory=dict, compare=False, init=False)
+    __edges: dict[int, int] = field(default_factory=dict, compare=False, init=False)
 
     def add_instruction(self, addr: int, instr_or_jmp: Instruction | Jump):
-        assert(isinstance(instr_or_jmp, Instruction | Jump) == True) ## You have to provide a instruction or jump instance.
+        assert(isinstance(instr_or_jmp, Instruction | Jump))
         self.__block[addr] = astuple(instr_or_jmp)
 
+    def add_edge(self, edge: int, traversed:bool):
+        self.__edges[edge] = self.__edges.get(edge, 0) + traversed
+
+    def edge_strings(self):
+        for i, pair in enumerate(self.edges):
+            yield (i, pair[0], pair[1])
+
     @property
-    def end(self): ## Get the last key of the block and convert to int
+    def end(self): 
         return int(self.addresses[-1])
 
     @property
     def addresses(self):
         return self.__block.keys()
-
+    
     @property
-    def instructions(self):
-        return self.__block.items()
+    def edges(self):
+        return self.__edges.items()
 
     @property
     def id(self):
         return self.__id
 
-    ## The string representation of the node for debugging.
     def __str__(self):
         ret_string = ""
         for address in self.__block:
@@ -78,7 +85,6 @@ class CFGNode:
             ret_string += f"{hex(address) : <16} {retrieved[0] :<12} {retrieved[1]:<12}\n"
         return ret_string
 
-    ## The  
     def __repr__(self):
         ret_string = ""
         for address in self.__block:
@@ -90,57 +96,58 @@ class CFGNode:
         return ret_string
 
 
-class DirectedGraph:
+class ControlFlowGraph:
     def __init__(self, entry_point:int):
-        self._curr_node: CFGNode = CFGNode(entry_point)
-        # self._previous_node: CFGNode = None
-        self._nodes: dict[CFGNode, list[list[CFGNode, int]]] = {}
-        self.add_node(self._curr_node)
+        self._nodes: list[BasicBlock] = [BasicBlock(entry_point)]
+        self._curr_node: BasicBlock = self._nodes[0]
+    
+    def execute(self, program_counter:int, instruction: Instruction | Jump):
+        assert(program_counter >= self._curr_node.start)
+        if program_counter not in self._curr_node.addresses:
+            self._curr_node.add_instruction(program_counter, instruction)
+        if isinstance(instruction, Jump):
+            match instruction.jump_type:
+                case JumpType.JMP:
+                    next_index, next_block = self.__query_block_or_create(instruction.success_address)
+                    self._curr_node.add_edge(next_index, True)
+                    self._curr_node = next_block
+                case JumpType.JCC_TAKEN:
+                    fail_index, fail_block = self.__query_block_or_create(instruction.failure_address)
+                    self._curr_node.add_edge(fail_index, False)
+                    success_index, success_block = self.__query_block_or_create(instruction.success_address)
+                    self._curr_node.add_edge(success_index, True)
+                    self._curr_node = success_block
+                case JumpType.JCC_NOT_TAKEN:
+                    fail_index, fail_block = self.__query_block_or_create(instruction.failure_address)
+                    self._curr_node.add_edge(fail_index, True)
+                    success_index, success_block = self.__query_block_or_create(instruction.success_address)
+                    self._curr_node.add_edge(success_index, False)
+                    self._curr_node = fail_block
 
-    ## edges: list[CFGNode] = DirectedGraph[node]
-    def __getitem__(self, key) -> CFGNode:
-        return self._nodes[key]
+    def __add_node(self, node:BasicBlock):
+        assert(isinstance(node, BasicBlock))
+        self._nodes.append(node)
 
-    ## DirectedGraph[node] = edges
-    def __setitem__(self, node: CFGNode, edges: Optional[ list[list[CFGNode, int]] ]=None):
-        edges = [] if edges is None else edges
-        self._nodes[node] = edges
+    def __query_block_or_create(self, start_addr:int) -> tuple[int, BasicBlock]:
+        for i, node in enumerate(self.nodes):
+            if node.start == start_addr:
+                return (i, node)
+        index = len(self._nodes)
+        self.__add_node(BasicBlock(start_addr))
+        return (index, self._nodes[index])
 
-    """ Iterating in reverse to see if we might have already explored a node is faster, if such node exists. """
-    @property
-    def nodes(self):
-        return self._nodes.keys().__reversed__()
+    def png(self, output_name: str):
+        self.dot()
+        subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
+        os.remove('output.dot')
 
-    def add_node(self, node:CFGNode, edges: Optional[ list[list[CFGNode, int]] ]=None):
-        assert(isinstance(node, CFGNode) == True)
-        edges = [] if edges is None else edges
-        self._nodes.setdefault(node, edges)
 
-    def add_edge(self, node:CFGNode, edge:CFGNode, init:int):
-        pair: list[CFGNode, int] = self.query_edges(node, edge)
-        if not pair:
-            self._nodes[node].append( [edge, init] )
-        else:
-            pair[1] += 1
+    def pdf(self, output_name: str):
+        self.dot()
+        subprocess.run(f'dot -Tpdf -Gdpi=300 output.dot -o {output_name}.pdf', shell=True)
+        os.remove('output.dot')
 
-    def query_edges(self, node: CFGNode, target_edge: CFGNode) -> Optional[list[CFGNode, int]]:
-        for pair in self._nodes[node]:
-            if pair[0].start == target_edge.start:
-                return pair
-        return None
-
-    def query_nodes(self, address) -> Optional[CFGNode]:
-        for node in self.nodes:
-            if node.start == address:
-                return node
-        return None
-
-    def edges_to_string(self, edges: list[ list[CFGNode, int]] ) -> tuple[int, str, str]:
-        for i, pair in enumerate(edges):
-            yield (i, f'node_{pair[0].start}', f'[label="{pair[1]}"]')
-
-            
-    def generate_dot(self):
+    def dot(self):
         with open("output.dot", "w") as fd:
             fd.write("digraph pyCFG {\n")
             for node in self._nodes:
@@ -150,89 +157,19 @@ class DirectedGraph:
                 fd.write(f'\tnode_{node.start} [shape =box][label="{box_label}"]{box_color}[penwidth=2][fontname = "Comic Sans MS"]\n')
             fd.write("\n")
             for node in self._nodes:
-                node_edges = self._nodes[node]
-                for (edge_num, edge_string, visits_label) in self.edges_to_string(node_edges):
-                    edge_color = "blue" if len(node_edges) == 1 else "red" if len(node_edges) == 2 and edge_num == 0 else "green"
-                    fd.write(f'\tnode_{node.start} -> {{{edge_string}}} {visits_label}[color="{edge_color}"]\n')
+                number_of_edges = len(node.edges)
+                for (edge_num, edge_index, edge_traversals) in node.edge_strings():
+                    edge_color = "blue" if number_of_edges == 1 else "red" if number_of_edges == 2 and edge_num == 0 else "green"
+                    fd.write(f'\tnode_{node.start} -> node_{self._nodes[edge_index].start} [label="{edge_traversals}"][color="{edge_color}"]\n')
             fd.write("}\n")
 
+    @property
+    def nodes(self):
+        return reversed(self._nodes)
 
-" The control flow graph requires to know the entry point which it will start the nodes from. "
-class pyCFG:
-    def __init__(self, entry_point: int):
-        self.__CFG = DirectedGraph(entry_point)
-
-    """ The given instruction is executed and mapped into the control flow graph into its rightful node. """
-    """ This is the meat and potatoes of the control flow mapping. As instructions actually act on the graph. """
-    def execute(self, program_counter:int, instr_or_jmp: Instruction | Jump):
-        if isinstance(instr_or_jmp, Instruction):
-            if program_counter not in self.__CFG._curr_node.addresses:
-                self.__CFG._curr_node.add_instruction(program_counter, instr_or_jmp)
-        else:
-            self.__match_jump(program_counter, instr_or_jmp)
-
-    def __match_jump(self, program_counter:int, jump: Jump):
-        assert(isinstance(jump, Jump) == True)
-        match jump.jump_type:
-            case JumpType.JMP:
-                potential_node = self.__CFG.query_nodes(jump.success_address)
-                next_node = potential_node if potential_node else CFGNode(jump.success_address)
-                self.__CFG._curr_node.add_instruction(program_counter, jump)
-                if not potential_node:
-                    self.__CFG.add_node(next_node)
-                self.__CFG.add_edge(self.__CFG._curr_node, next_node, 1)
-                self.__CFG._curr_node = next_node
-            case JumpType.JCC_TAKEN:
-                target_address = jump.success_address
-                potential_node = self.__CFG.query_nodes(target_address)
-                next_node = potential_node if potential_node else CFGNode(target_address)
-                potential_fail_node = self.__CFG.query_nodes(jump.failure_address)
-                fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.failure_address)
-                if not potential_fail_node:
-                    self.__CFG.add_node(fail_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node, 0)
-                if not potential_node: ## We have made a new node
-                    self.__CFG._curr_node.add_instruction(program_counter, jump)
-                    self.__CFG.add_node(next_node)
-                self.__CFG.add_edge(self.__CFG._curr_node, next_node, 1)
-                self.__CFG._curr_node = next_node
-            case JumpType.JCC_NOT_TAKEN:
-                target_address = jump.failure_address
-                potential_node = self.__CFG.query_nodes(target_address)
-                next_node = potential_node if potential_node else CFGNode(target_address)
-                potential_fail_node = self.__CFG.query_nodes(jump.success_address)
-                fail_node = potential_fail_node if potential_fail_node else CFGNode(jump.success_address)
-                if not potential_node: ## We have made a new node
-                    self.__CFG._curr_node.add_instruction(program_counter, jump)
-                    self.__CFG.add_node(next_node)
-                self.__CFG.add_edge(self.__CFG._curr_node, next_node, 1)
-                if not potential_fail_node:
-                    self.__CFG.add_node(fail_node)
-                    self.__CFG.add_edge(self.__CFG._curr_node, fail_node, 0)
-                self.__CFG._curr_node = next_node
-
-
-    
-    """ View the generated .dot with pySide6 """
-    def png(self, output_name):
-        self.__CFG.generate_dot()
-        subprocess.run(f'dot -Tpng -Gdpi=300 output.dot -o {output_name}.png', shell=True)
-        os.remove("output.dot")
-
-    def pdf(self, output_name):
-        self.__CFG.generate_dot()
-        subprocess.run(f'dot -Tpdf -Gdpi=300 output.dot -o {output_name}.pdf', shell=True)
-        os.remove("output.dot")
-
-    def __nodes__(self):
-        return self.__CFG.nodes
-
-
-# Creating our own .dot file generation
 
 if __name__ == "__main__":
-    test_graph = pyCFG(0)
-    new_node = CFGNode(3)
+    test_graph = ControlFlowGraph(0)
     test_graph.execute(1, Instruction("LOAD"))
     test_graph.execute(2, Instruction("PUSH", "1"))
     test_graph.execute(3, Instruction("STORE", "1"))
@@ -240,8 +177,5 @@ if __name__ == "__main__":
     test_graph.execute(5, Instruction("PUSH", "1"))
     test_graph.execute(6, Jump("JMPZ", 7, JumpType.JCC_TAKEN, 12))
     test_graph.execute(7, Instruction("PUSH", "1"))
-    for node in test_graph.__nodes__():
-        print(node)
-    test_graph.png('teest')
+    test_graph.png("tester")
     test_graph.pdf("test")
-    # Handle loop case of a block
